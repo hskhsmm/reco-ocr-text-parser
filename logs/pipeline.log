@@ -1,0 +1,10 @@
+[2026-02-06 04:58:41] INFO - [sample_01.json] 처리 완료 → {'car_number': '8713', 'date': '2026-02-02', 'weights': {'total': 12480, 'empty': 7470, 'net': 5010}}
+[2026-02-06 04:58:41] INFO - [sample_02.json] 처리 완료 → {'car_number': '80구8713', 'date': '2026-02-02', 'weights': {'total': 13460, 'empty': 7560, 'net': 5900}}
+[2026-02-06 04:58:41] INFO - [sample_03.json] 처리 완료 → {'car_number': '5405', 'date': '2026-02-01', 'weights': {'total': 14080, 'empty': 13950, 'net': 130}}
+[2026-02-06 04:58:41] INFO - [sample_04.json] 처리 완료 → {'car_number': '0580', 'date': '2025-12-01', 'weights': {'total': 14230, 'empty': 12910, 'net': 1320}}
+[2026-02-06 04:58:41] INFO - 전체 파이프라인 완료
+[2026-02-06 05:02:30] INFO - [sample_01.json] 처리 완료 → {'car_number': '8713', 'date': '2026-02-02', 'weights': {'total': 12480, 'empty': 7470, 'net': 5010}}
+[2026-02-06 05:02:30] INFO - [sample_02.json] 처리 완료 → {'car_number': '80구8713', 'date': '2026-02-02', 'weights': {'total': 13460, 'empty': 7560, 'net': 5900}}
+[2026-02-06 05:02:30] INFO - [sample_03.json] 처리 완료 → {'car_number': '5405', 'date': '2026-02-01', 'weights': {'total': 14080, 'empty': 13950, 'net': 130}}
+[2026-02-06 05:02:30] INFO - [sample_04.json] 처리 완료 → {'car_number': '0580', 'date': '2025-12-01', 'weights': {'total': 14230, 'empty': 12910, 'net': 1320}}
+[2026-02-06 05:02:30] INFO - 전체 파이프라인 완료
