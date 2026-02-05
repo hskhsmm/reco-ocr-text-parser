@@ -1,12 +1,42 @@
 import json
+import logging
 from pathlib import Path
 from src.parser.cleaner import clean_text
 from src.parser.extractor import OcrExtractor
 
+logger = logging.getLogger(__name__)
+
+
+def setup_logging():
+    """콘솔 + 파일 동시 출력 로깅 설정"""
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)
+
+    formatter = logging.Formatter(
+        "[%(asctime)s] %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
+
+    # 콘솔 핸들러
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(formatter)
+
+    # 파일 핸들러
+    file_handler = logging.FileHandler("logs/pipeline.log", encoding="utf-8")
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(formatter)
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    root_logger.addHandler(console_handler)
+    root_logger.addHandler(file_handler)
+
+
 def run_cleaning_pipeline():
     data_dir = Path("data")
     output_dir = Path("outputs")
-    output_dir.mkdir(exist_ok=True) 
+    output_dir.mkdir(exist_ok=True)
 
     extractor = OcrExtractor()
 
@@ -14,19 +44,35 @@ def run_cleaning_pipeline():
         with open(json_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
             raw_text = data.get('text', '')
-            
-            # 텍스트 정제 및 데이터 추출
+
             cleaned = clean_text(raw_text)
             extracted_data = extractor.extract(cleaned)
-            
+
+            # 필드 누락 경고
+            if extracted_data['car_number'] == "N/A":
+                logger.warning("[%s] 차량번호 추출 실패", json_file.name)
+            if extracted_data['date'] == "N/A":
+                logger.warning("[%s] 날짜 추출 실패", json_file.name)
+
+            # 무게 검증
+            w = extracted_data['weights']
+            if w['total'] > 0 and w['empty'] > 0 and w['net'] > 0:
+                if w['total'] != w['empty'] + w['net']:
+                    logger.warning(
+                        "[%s] 무게 산술 불일치: total(%d) != empty(%d) + net(%d)",
+                        json_file.name, w['total'], w['empty'], w['net']
+                    )
+
             # 결과물 JSON 파일로 저장
             output_path = output_dir / f"{json_file.stem}_result.json"
             with open(output_path, 'w', encoding='utf-8') as out_f:
                 json.dump(extracted_data, out_f, ensure_ascii=False, indent=4)
-            
-            print(f" {json_file.name} 처리 및 저장 완료")
-            print(f" 결과: {extracted_data}")
-            print("-" * 50)
+
+            logger.info("[%s] 처리 완료 → %s", json_file.name, extracted_data)
+
+    logger.info("전체 파이프라인 완료")
+
 
 if __name__ == "__main__":
+    setup_logging()
     run_cleaning_pipeline()
