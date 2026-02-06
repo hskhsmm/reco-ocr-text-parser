@@ -1,11 +1,13 @@
 import re
-from src.utils.formatter import merge_split_number_kg, is_noise_line
+from src.utils.formatter import merge_split_number_kg, is_noise_line, extract_number_value
 from src.parser.rules import (
     DATE_LABELS,
     CAR_LABELS,
     CAR_PART_HINTS,
     CLIENT_LABELS,
     ISSUER_HINTS,
+    DATE_REGEX,
+    ADDRESS_PREFIX_PATTERN,
 )
 
 
@@ -54,22 +56,7 @@ class OcrExtractor:
 
         for line in lines:
             line_lower = line.lower()
-            val = 0
-
-            # [우선순위 1] 'kg' 단위 숫자 추출
-            kg_match = re.search(r'(\d+(?:,\d{3})*)\s*kg', line_lower)
-            if kg_match:
-                val = int(kg_match.group(1).replace(',', ''))
-            else:
-                # [우선순위 2] 줄 마지막 숫자 덩어리
-                raw_nums = re.findall(r'(\d[\d,]+)', line_lower)
-                if not raw_nums:
-                    continue
-                try:
-                    val = int(raw_nums[-1].replace(',', ''))
-                except (ValueError, IndexError):
-                    continue
-
+            val = extract_number_value(line_lower)
             if val == 0:
                 continue
 
@@ -137,12 +124,12 @@ class OcrExtractor:
 
             # [날짜 추출]
             if any(k in clean_kw for k in DATE_LABELS) and results['date'] == "N/A":
-                date_match = re.search(r'(\d{4}[-/.]\d{2}[-/.]\d{2})', line)
+                date_match = re.search(DATE_REGEX, line)
                 if date_match:
                     results['date'] = date_match.group(1).replace('.', '-')
             # Fallback: 규칙 테이블 기반 라벨 매칭 (동작 불변, 동의어 추가만)
             if results['date'] == "N/A" and _contains_any(clean_kw, DATE_LABELS):
-                dm = re.search(r'(\d{4}[-/.]\d{2}[-/.]\d{2})', line)
+                dm = re.search(DATE_REGEX, line)
                 if dm:
                     results['date'] = dm.group(1).replace('.', '-')
 
@@ -254,12 +241,7 @@ class OcrExtractor:
         if results['issuer_address'] == "N/A":
             for line in lines:
                 ls = line.strip()
-                if re.match(
-                    r'^(경기도|서울|부산|대구|인천|광주|대전|울산|세종|'
-                    r'충청북도|충청남도|충북|충남|전라북도|전라남도|전북|전남|'
-                    r'경상북도|경상남도|경북|경남|강원도|강원|제주도|제주)',
-                    ls
-                ):
+                if re.match(ADDRESS_PREFIX_PATTERN, ls):
                     results['issuer_address'] = ls
                     break
 
