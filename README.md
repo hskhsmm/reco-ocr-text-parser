@@ -194,6 +194,47 @@ pytest 기반 단위 테스트 32개 케이스를 포함합니다.
 python -m pytest tests/ -v
 ```
 
+## 리팩터링 요약
+
+### 목적
+
+기존에 `extractor.py` 한 파일에 모여 있던 규칙 상수, 유틸 함수, 추출 로직을 역할별로 분리했습니다.
+**동작은 동일**하며, 기존 테스트 32개가 모두 통과하고 파이프라인 결과도 변하지 않습니다.
+
+### 변경 내용
+
+| 변경 사항 | 파일 | 설명 |
+|---|---|---|
+| 규칙 상수 분리 | `src/parser/rules.py` | 라벨 키워드(`DATE_LABELS`, `CAR_LABELS` 등)와 정규식(`DATE_REGEX`, `ADDRESS_PREFIX_PATTERN`)을 별도 파일로 분리 |
+| 공통 유틸 분리 | `src/utils/formatter.py` | 숫자 병합(`merge_split_number_kg`), 노이즈 판별(`is_noise_line`), 숫자 추출(`extract_number_value`) 함수를 유틸로 분리 |
+| 내부 함수 정리 | `src/parser/extractor.py` | 날짜 추출(`_extract_date_from_line`), 중량 파싱(`_parse_weights`), 중량 추론(`_infer_weights`)을 내부 메서드로 분리 |
+
+### 변경되지 않은 것
+
+- 추출 우선순위(kg 단위 우선)와 휴리스틱(발급사 하단 탐색, 노이즈 제외) 동일
+- 결과 JSON 스키마와 포맷 동일
+- 라벨 매칭 순서 동일
+
+### 확장 가이드
+
+리팩터링 이후, 코드 로직을 수정하지 않고 **규칙 파일만 편집**하여 새로운 패턴을 추가할 수 있습니다.
+
+| 확장 목적 | 수정 파일 | 예시 |
+|---|---|---|
+| 날짜 라벨 추가 | `src/parser/rules.py` | `DATE_LABELS`에 `"검수일자"` 추가 → 해당 라벨도 날짜로 인식 |
+| 발급사 패턴 추가 | `src/parser/rules.py` | `ISSUER_HINTS`에 `"(유)"` 추가 → 유한회사도 발급사로 인식 |
+| 주소 지역 추가 | `src/parser/rules.py` | `ADDRESS_PREFIX_PATTERN`에 지역명 추가 |
+| 무게 단위 추가 | `src/utils/formatter.py` | `extract_number_value`에 `ton`/`t` 단위 분기 추가 |
+
+```python
+# 예: 날짜 라벨 추가 (src/parser/rules.py)
+DATE_LABELS = [
+    "계량일자", "날짜", "일시", "일자",
+    "검수일자",  # ← 새로 추가
+]
+```
+
+
 | 테스트 파일 | 케이스 수 | 검증 내용 |
 |---|---|---|
 | `test_cleaner.py` | 8개 | 오탈자 교정, 특수문자 제거, 공백 정규화 |
