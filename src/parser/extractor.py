@@ -1,12 +1,12 @@
 import re
 from src.utils.formatter import merge_split_number_kg, is_noise_line
-
-# 라벨/키워드 규칙 테이블 (동작 불변 유지, 동의어만 추가)
-DATE_LABELS = ["계량일자", "날짜", "일시", "일자"]
-CAR_LABELS = ["차량번호:", "차번호:", "차량No.", "차번:"]
-CAR_PART_HINTS = ["번호", "No."]
-CLIENT_LABELS = ["거래처:", "거래처 :", "고객사:", "고객사 :", "상호:", "상호 :"]
-ISSUER_HINTS = ["(주", "주식회사"]
+from src.parser.rules import (
+    DATE_LABELS,
+    CAR_LABELS,
+    CAR_PART_HINTS,
+    CLIENT_LABELS,
+    ISSUER_HINTS,
+)
 
 
 def _contains_any(text: str, keywords):
@@ -136,7 +136,7 @@ class OcrExtractor:
             label_norm = self._remove_spaces_between_korean(line).strip()
 
             # [날짜 추출]
-            if any(k in clean_kw for k in ["계량일자", "날짜", "일시", "일자"]) and results['date'] == "N/A":
+            if any(k in clean_kw for k in DATE_LABELS) and results['date'] == "N/A":
                 date_match = re.search(r'(\d{4}[-/.]\d{2}[-/.]\d{2})', line)
                 if date_match:
                     results['date'] = date_match.group(1).replace('.', '-')
@@ -148,10 +148,10 @@ class OcrExtractor:
 
             # [차량번호 추출]
             if results['car_number'] == "N/A":
-                if any(k in clean_kw for k in ["차량번호:", "차번호:", "차량No."]):
+                if any(k in clean_kw for k in CAR_LABELS):
                     parts = line.split()
                     for i, part in enumerate(parts):
-                        if any(k in part for k in ["번호", "No."]):
+                        if any(k in part for k in CAR_PART_HINTS):
                             # 콜론이 같은 토큰에 붙어있으면 다음 토큰이 값
                             if ':' in part or '.' in part:
                                 if i + 1 < len(parts):
@@ -175,7 +175,7 @@ class OcrExtractor:
             # [거래처/고객사 추출] - 라벨 기반
             if results['client_name'] == "N/A":
                 # 한글 사이 공백이 제거된 label_norm에서 키워드 탐색
-                for keyword in ["거래처:", "거래처 :", "상호:", "상호 :"]:
+                for keyword in CLIENT_LABELS:
                     if keyword in label_norm:
                         val = label_norm.split(keyword, 1)[1].strip()
                         if val:
@@ -215,7 +215,7 @@ class OcrExtractor:
             for line in lines:
                 ls = line.strip()
                 norm = self._remove_spaces_between_korean(ls)
-                if "(주)" in norm or "주식회사" in norm:
+                if _contains_any(norm, ISSUER_HINTS):
                     # 날짜/시간/무게/좌표 줄 제외
                     if re.search(r'^\d{4}[-/.]\d{2}[-/.]\d{2}', ls):
                         continue
