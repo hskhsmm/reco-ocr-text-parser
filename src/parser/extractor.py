@@ -1,6 +1,29 @@
 import re
 from src.utils.formatter import merge_split_number_kg, is_noise_line
 
+# 라벨/키워드 규칙 테이블 (동작 불변 유지, 동의어만 추가)
+DATE_LABELS = ["계량일자", "날짜", "일시", "일자"]
+CAR_LABELS = ["차량번호:", "차번호:", "차량No.", "차번:"]
+CAR_PART_HINTS = ["번호", "No."]
+CLIENT_LABELS = ["거래처:", "거래처 :", "고객사:", "고객사 :", "상호:", "상호 :"]
+ISSUER_HINTS = ["(주", "주식회사"]
+
+
+def _contains_any(text: str, keywords):
+    """문자열에 키워드 목록 중 하나라도 포함되는지 검사"""
+    return any(k in text for k in keywords)
+
+
+def _extract_after_label(label_norm: str, labels):
+    """정규화된 한글 라벨 문자열에서 라벨 뒤 값을 추출"""
+    for keyword in labels:
+        if keyword in label_norm:
+            val = label_norm.split(keyword, 1)[1].strip()
+            if val:
+                return val
+            break
+    return ""
+
 
 class OcrExtractor:
     """
@@ -47,6 +70,11 @@ class OcrExtractor:
                 date_match = re.search(r'(\d{4}[-/.]\d{2}[-/.]\d{2})', line)
                 if date_match:
                     results['date'] = date_match.group(1).replace('.', '-')
+            # Fallback: 규칙 테이블 기반 라벨 매칭 (동작 불변, 동의어 추가만)
+            if results['date'] == "N/A" and _contains_any(clean_kw, DATE_LABELS):
+                dm = re.search(r'(\d{4}[-/.]\d{2}[-/.]\d{2})', line)
+                if dm:
+                    results['date'] = dm.group(1).replace('.', '-')
 
             # [차량번호 추출]
             if results['car_number'] == "N/A":
@@ -62,6 +90,17 @@ class OcrExtractor:
                                     if val not in ("입고", "출고"):
                                         results['car_number'] = val
                                         break
+            # Fallback: 규칙 테이블 기반 라벨 매칭 (동작 불변, 동의어 추가만)
+            if results['car_number'] == "N/A" and _contains_any(clean_kw, CAR_LABELS):
+                parts = line.split()
+                for i, part in enumerate(parts):
+                    if _contains_any(part, CAR_PART_HINTS):
+                        if ':' in part or '.' in part:
+                            if i + 1 < len(parts):
+                                val = parts[i + 1]
+                                if val not in ("입고", "출고"):
+                                    results['car_number'] = val
+                                    break
 
             # [거래처/고객사 추출] - 라벨 기반
             if results['client_name'] == "N/A":
@@ -72,6 +111,11 @@ class OcrExtractor:
                         if val:
                             results['client_name'] = val
                         break
+            # Fallback: 규칙 테이블 기반 라벨 매칭 (동작 불변, 동의어 추가만)
+            if results['client_name'] == "N/A":
+                val2 = _extract_after_label(label_norm, CLIENT_LABELS)
+                if val2:
+                    results['client_name'] = val2
 
             # [거래처/고객사 추출] - "XXX 귀하" 패턴
             if results['client_name'] == "N/A":
