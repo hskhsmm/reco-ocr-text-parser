@@ -1,6 +1,9 @@
 {
     "car_number": "80구8713",
     "date": "2026-02-02",
+    "issuer_name": "장원C&S",
+    "issuer_address": "N/A",
+    "client_name": "고요환경",
     "weights": {
         "total": 13460,
         "empty": 7560,

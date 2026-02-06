@@ -109,3 +109,66 @@ class TestCarNumberExtraction:
         text = "총중량: 10000 kg"
         result = extractor.extract(text)
         assert result['car_number'] == "N/A"
+
+
+class TestClientNameExtraction:
+    """거래처/고객사 추출 로직을 검증합니다."""
+
+    def test_client_from_거래처_with_spaces(self, extractor):
+        """OCR 공백이 포함된 '거 래 처:' 라벨에서 추출"""
+        text = "거 래 처: 곰욕환경폐기물"
+        result = extractor.extract(text)
+        assert result['client_name'] == "곰욕환경폐기물"
+
+    def test_client_from_상호_with_spaces(self, extractor):
+        """OCR 공백이 포함된 '상 호:' 라벨에서 추출"""
+        text = "상 호: 고요환경"
+        result = extractor.extract(text)
+        assert result['client_name'] == "고요환경"
+
+    def test_client_from_귀하_pattern(self, extractor):
+        """'XXX 귀하' 패턴에서 고객사명 추출"""
+        text = "신성(푸디스트) 귀하"
+        result = extractor.extract(text)
+        assert result['client_name'] == "신성(푸디스트)"
+
+    def test_empty_client_returns_na(self, extractor):
+        """거래처 값이 비어있으면 N/A"""
+        text = "회 사 명 :\n총중량: 10000 kg"
+        result = extractor.extract(text)
+        assert result['client_name'] == "N/A"
+
+
+class TestIssuerExtraction:
+    """발급 회사명 및 주소 추출 로직을 검증합니다."""
+
+    def test_issuer_with_주(self, extractor):
+        """(주) 패턴 회사명 추출"""
+        text = "동우바이오(주)\n2026-02-02 05:37:55"
+        result = extractor.extract(text)
+        assert result['issuer_name'] == "동우바이오(주)"
+
+    def test_issuer_spacing_normalized(self, extractor):
+        """한글 사이 공백과 (주) 앞뒤 공백 제거"""
+        text = "(주) 하 은 펄 프\n경기도 화성시 팔탄면 포승향남로 2960-19"
+        result = extractor.extract(text)
+        assert result['issuer_name'] == "(주)하은펄프"
+
+    def test_issuer_not_confused_with_client(self, extractor):
+        """'귀하' 포함 줄은 issuer가 아닌 client로 분류"""
+        text = "신성(푸디스트) 귀하\n정우리사이클링(주)"
+        result = extractor.extract(text)
+        assert result['issuer_name'] == "정우리사이클링(주)"
+        assert result['client_name'] == "신성(푸디스트)"
+
+    def test_issuer_address_extracted(self, extractor):
+        """회사 주소 추출"""
+        text = "(주)하은펄프\n경기도 화성시 팔탄면 포승향남로 2960-19"
+        result = extractor.extract(text)
+        assert result['issuer_address'] == "경기도 화성시 팔탄면 포승향남로 2960-19"
+
+    def test_no_address_returns_na(self, extractor):
+        """주소가 없으면 N/A"""
+        text = "동우바이오(주)\n2026-02-02 05:37:55"
+        result = extractor.extract(text)
+        assert result['issuer_address'] == "N/A"

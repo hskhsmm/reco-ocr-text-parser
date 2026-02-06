@@ -1,6 +1,9 @@
 {
     "car_number": "0580",
     "date": "2025-12-01",
+    "issuer_name": "(주)하은펄프",
+    "issuer_address": "경기도 화성시 팔탄면 포승향남로 2960-19",
+    "client_name": "신성(푸디스트)",
     "weights": {
         "total": 14230,
         "empty": 12910,
