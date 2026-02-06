@@ -70,11 +70,12 @@ python -m pytest tests/ -v
 
 ```mermaid
 flowchart LR
-    A["OCR JSON\n(data/)"] --> B["cleaner.py\n텍스트 전처리"]
-    B --> C["extractor.py\n데이터 추출"]
-    C --> D["산술 검증\ntotal = empty + net"]
-    D --> E["결과 JSON\n(outputs/)"]
-    D --> F["실행 로그\n(logs/)"]
+    A["OCR JSON<br/>(data)"] --> B["cleaner.py<br/>텍스트 전처리"]
+    B --> C["extractor.py<br/>데이터 추출"]
+    C --> D["산술 검증<br/>total = empty + net"]
+    D --> E["결과 JSON<br/>(outputs/)"]
+    D --> F["실행 로그<br/>(logs/)"]
+
 ```
 
 ### 1단계: 텍스트 전처리 (`cleaner.py`)
