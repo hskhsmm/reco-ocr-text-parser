@@ -42,6 +42,76 @@ class OcrExtractor:
         text = re.sub(r'\s*\(주\)\s*', '(주)', text)
         return text
 
+    # ── 내부: 중량 파서 ────────────────────────────────────────
+    def _parse_weights(self, lines):
+        """라인 목록에서 중량 관련 숫자를 추출하여 사전으로 반환.
+
+        우선순위/매칭 규칙은 기존 extract의 로직을 그대로 따른다.
+        반환: (weights_dict, temp_weight)
+        """
+        weights = {"total": 0, "empty": 0, "net": 0}
+        temp_weight = 0
+
+        for line in lines:
+            line_lower = line.lower()
+            val = 0
+
+            # [우선순위 1] 'kg' 단위 숫자 추출
+            kg_match = re.search(r'(\d+(?:,\d{3})*)\s*kg', line_lower)
+            if kg_match:
+                val = int(kg_match.group(1).replace(',', ''))
+            else:
+                # [우선순위 2] 줄 마지막 숫자 덩어리
+                raw_nums = re.findall(r'(\d[\d,]+)', line_lower)
+                if not raw_nums:
+                    continue
+                try:
+                    val = int(raw_nums[-1].replace(',', ''))
+                except (ValueError, IndexError):
+                    continue
+
+            if val == 0:
+                continue
+
+            # 공백 제거 후 키워드 매칭
+            clean_line = line_lower.replace(" ", "")
+
+            if any(k in clean_line for k in ["실중량", "순중량"]):
+                if weights['net'] == 0:
+                    weights['net'] = val
+            elif any(k in clean_line for k in ["공차중량", "차중량"]):
+                if weights['empty'] == 0:
+                    weights['empty'] = val
+            elif "총중량" in clean_line:
+                if weights['total'] == 0:
+                    weights['total'] = val
+            elif '품명' in clean_line:
+                if weights['total'] == 0:
+                    weights['total'] = val
+            elif '중량' in clean_line:
+                if temp_weight == 0:
+                    temp_weight = val
+
+        return weights, temp_weight
+
+    # ── 내부: 중량 산술 추론 ───────────────────────────────────
+    @staticmethod
+    def _infer_weights(w):
+        """total/empty/net의 산술 일관성을 바탕으로 누락값을 추론.
+        기존 동작 그대로 유지한다.
+        """
+        if w['total'] > 0 and w['empty'] > 0:
+            calculated_net = w['total'] - w['empty']
+            if calculated_net >= 0:
+                w['net'] = calculated_net
+        elif w['empty'] > 0 and w['net'] > 0 and w['total'] == 0:
+            w['total'] = w['empty'] + w['net']
+        elif w['total'] > 0 and w['net'] > 0 and w['empty'] == 0:
+            calculated_empty = w['total'] - w['net']
+            if calculated_empty >= 0:
+                w['empty'] = calculated_empty
+        return w
+
     # ── 메인 추출 ──────────────────────────────────────────────
     def extract(self, text: str) -> dict:
         results = {
@@ -124,64 +194,15 @@ class OcrExtractor:
                     results['client_name'] = guiha_match.group(1).strip()
 
         # ── 2단계: 중량 데이터 추출 ──
-        temp_weight = 0
+        w, temp_weight = self._parse_weights(lines)
 
-        for line in lines:
-            line_lower = line.lower()
-            val = 0
-
-            # [우선순위 1] 'kg' 단위 숫자 추출
-            kg_match = re.search(r'(\d+(?:,\d{3})*)\s*kg', line_lower)
-            if kg_match:
-                val = int(kg_match.group(1).replace(',', ''))
-            else:
-                # [우선순위 2] 줄 마지막 숫자 덩어리
-                raw_nums = re.findall(r'(\d[\d,]+)', line_lower)
-                if not raw_nums:
-                    continue
-                try:
-                    val = int(raw_nums[-1].replace(',', ''))
-                except (ValueError, IndexError):
-                    continue
-
-            if val == 0:
-                continue
-
-            # 공백 제거 후 키워드 매칭
-            clean_line = line_lower.replace(" ", "")
-
-            if any(k in clean_line for k in ["실중량", "순중량"]):
-                if results['weights']['net'] == 0:
-                    results['weights']['net'] = val
-            elif any(k in clean_line for k in ["공차중량", "차중량"]):
-                if results['weights']['empty'] == 0:
-                    results['weights']['empty'] = val
-            elif "총중량" in clean_line:
-                if results['weights']['total'] == 0:
-                    results['weights']['total'] = val
-            elif '품명' in clean_line:
-                if results['weights']['total'] == 0:
-                    results['weights']['total'] = val
-            elif '중량' in clean_line:
-                if temp_weight == 0:
-                    temp_weight = val
-
-        # 라벨 누락 값 보충
-        if results['weights']['net'] > 0 and temp_weight > 0 and results['weights']['empty'] == 0:
-            results['weights']['empty'] = temp_weight
+        # 라벨 누락 값 보충 (동작 동일)
+        if w['net'] > 0 and temp_weight > 0 and w['empty'] == 0:
+            w['empty'] = temp_weight
 
         # ── 3단계: 무게 산술 검증 및 추론 ──
-        w = results['weights']
-        if w['total'] > 0 and w['empty'] > 0:
-            calculated_net = w['total'] - w['empty']
-            if calculated_net >= 0:
-                w['net'] = calculated_net
-        elif w['empty'] > 0 and w['net'] > 0 and w['total'] == 0:
-            w['total'] = w['empty'] + w['net']
-        elif w['total'] > 0 and w['net'] > 0 and w['empty'] == 0:
-            calculated_empty = w['total'] - w['net']
-            if calculated_empty >= 0:
-                w['empty'] = calculated_empty
+        w = self._infer_weights(w)
+        results['weights'] = w
 
         # ── 4단계: 발급 회사명 추출 ──
         if results['issuer_name'] == "N/A":
