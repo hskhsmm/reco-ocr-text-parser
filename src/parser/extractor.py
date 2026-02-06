@@ -1,4 +1,5 @@
 import re
+from src.utils.formatter import merge_split_number_kg, is_noise_line
 
 
 class OcrExtractor:
@@ -30,7 +31,8 @@ class OcrExtractor:
         }
 
         # [전처리] 숫자 사이 공백 합치기 (예: "13 460 kg" → "13460kg")
-        processed_text = re.sub(r'(\d+)\s+(\d+)\s*kg', r'\1\2kg', text)
+        # 숫자와 'kg' 사이 공백으로 분리된 경우 병합 처리 (예: "13 460 kg" -> "13460kg")
+        processed_text = merge_split_number_kg(text)
         lines = processed_text.split('\n')
 
         # ── 1단계: 메타데이터 추출 (날짜, 차량번호, 거래처/고객사) ──
@@ -171,15 +173,8 @@ class OcrExtractor:
                     ls = line.strip()
                     if not ls:
                         continue
-                    if re.search(r'\d{4}[-/.]\d{2}[-/.]\d{2}', ls):
-                        continue
-                    if re.search(r'[\d,]+\s*kg', ls, re.IGNORECASE):
-                        continue
-                    if re.search(r'\d{2}:\d{2}', ls):
-                        continue
-                    if re.search(r'^\d{2,3}\.\d{5,}', ls):
-                        continue
-                    if re.fullmatch(r'\d+', ls):
+                    # 날짜/시간/좌표/순수숫자/무게(kg) 등 노이즈 라인은 제외
+                    if is_noise_line(ls):
                         continue
                     if ls in extracted_vals:
                         continue
