@@ -33,6 +33,15 @@ class OcrExtractor:
     발급회사(issuer), 거래처/고객사(client)를 추출하고 검증하는 클래스입니다.
     """
 
+    @staticmethod
+    def _extract_date_from_line(line: str) -> str:
+        """한 줄에서 날짜(YYYY-MM-DD/./)를 찾아 '-' 포맷으로 반환. 실패 시 빈 문자열.
+        """
+        m = re.search(DATE_REGEX, line)
+        if m:
+            return m.group(1).replace('.', '-')
+        return ""
+
     # ── 내부 유틸 ──────────────────────────────────────────────
     @staticmethod
     def _remove_spaces_between_korean(text: str) -> str:
@@ -123,15 +132,10 @@ class OcrExtractor:
             label_norm = self._remove_spaces_between_korean(line).strip()
 
             # [날짜 추출]
-            if any(k in clean_kw for k in DATE_LABELS) and results['date'] == "N/A":
-                date_match = re.search(DATE_REGEX, line)
-                if date_match:
-                    results['date'] = date_match.group(1).replace('.', '-')
-            # Fallback: 규칙 테이블 기반 라벨 매칭 (동작 불변, 동의어 추가만)
-            if results['date'] == "N/A" and _contains_any(clean_kw, DATE_LABELS):
-                dm = re.search(DATE_REGEX, line)
-                if dm:
-                    results['date'] = dm.group(1).replace('.', '-')
+            if results['date'] == "N/A" and any(k in clean_kw for k in DATE_LABELS):
+                dv = self._extract_date_from_line(line)
+                if dv:
+                    results['date'] = dv
 
             # [차량번호 추출]
             if results['car_number'] == "N/A":
@@ -147,17 +151,7 @@ class OcrExtractor:
                                     if val not in ("입고", "출고"):
                                         results['car_number'] = val
                                         break
-            # Fallback: 규칙 테이블 기반 라벨 매칭 (동작 불변, 동의어 추가만)
-            if results['car_number'] == "N/A" and _contains_any(clean_kw, CAR_LABELS):
-                parts = line.split()
-                for i, part in enumerate(parts):
-                    if _contains_any(part, CAR_PART_HINTS):
-                        if ':' in part or '.' in part:
-                            if i + 1 < len(parts):
-                                val = parts[i + 1]
-                                if val not in ("입고", "출고"):
-                                    results['car_number'] = val
-                                    break
+            # (중복 로직 제거: 위 분기와 동일하므로 별도 Fallback 불필요)
 
             # [거래처/고객사 추출] - 라벨 기반
             if results['client_name'] == "N/A":
@@ -168,7 +162,7 @@ class OcrExtractor:
                         if val:
                             results['client_name'] = val
                         break
-            # Fallback: 규칙 테이블 기반 라벨 매칭 (동작 불변, 동의어 추가만)
+            # 라벨 기반 헬퍼 활용(동일 로직) - 값이 없을 때만 보조 적용
             if results['client_name'] == "N/A":
                 val2 = _extract_after_label(label_norm, CLIENT_LABELS)
                 if val2:
