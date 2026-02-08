@@ -160,6 +160,26 @@ reco-ocr-parser/
 python -m pytest tests/ -v
 ```
 
+## NLP 보조 모드 (옵션)
+
+기본 결과는 그대로 유지하고, 비어 있는 발급처/주소/거래처만 spaCy(EntityRuler)로 보조 추출할 수 있습니다.
+
+- 기본값: OFF (아무 영향 없음)
+- 활성화 방법:
+
+Git Bash
+```bash
+USE_NLP=1 python main.py
+```
+
+PowerShell
+```powershell
+$env:USE_NLP = '1'
+python .\main.py
+```
+
+설치가 필요하면: `pip install -r requirements.txt` (spaCy 3.7.2)
+
 ## 처리 흐름(Flow)
 
 ```mermaid
