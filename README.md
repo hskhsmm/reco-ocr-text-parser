@@ -28,16 +28,7 @@ python .\main.py
 python -m pytest tests/ -v
 ```
 
-## 처리 흐름(Flow)
 
-```mermaid
-flowchart LR
-    A["OCR JSON (data/)"] --> B["cleaner.py<br>전처리"]
-    B --> C["extractor.py<br>필드 추출"]
-    C --> D{"무게 검증·추론"}
-    D --> E["결과 JSON (outputs/)"]
-    D --> F["실행 로그 (logs/)"]
-```
 
 ## 프로젝트 구조
 
