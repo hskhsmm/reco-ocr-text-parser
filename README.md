@@ -134,8 +134,8 @@ reco-ocr-parser/
 
 ```mermaid
 flowchart LR
-    A["OCR JSON (data/)"] --> B["cleaner.py\n전처리"]
-    B --> C["extractor.py\n필드 추출"]
+    A["OCR JSON (data/)"] --> B["cleaner.py<br>전처리"]
+    B --> C["extractor.py<br>필드 추출"]
     C --> D{"무게 검증·추론"}
     D --> E["결과 JSON (outputs/)"]
     D --> F["실행 로그 (logs/)"]
@@ -146,7 +146,7 @@ flowchart LR
 강하게 커버하는 부분
 - 라벨 변형: `rules.py` 라벨/힌트 리스트로 다양한 표기 수용(차량번호/거래처/발급처)
 - 숫자 노이즈: 콤마·공백 분리 숫자(13 460 kg), 시간 끼임(02:07 13 460 kg) 정규화
-- 한글 띄어쓰기 오류: 한글-한글 사이 불필요 공백 제거, “( 주 )” → “(주)” 정리
+- 한글 띄어쓰기 오류: 한글-한글 사이 불필요 공백 제거, "( 주 )" → "(주)" 정리
 - 주소 1줄 패턴: 광역 접두(서울/경기/…) 매칭
 - 무게 누락 보정: total/empty/net 산술관계로 빠진 값 추론
 - 라벨 누락 보조: 옵션 NLP(EntityRuler)로 ORG/LOC 힌트 줄 보완(`USE_NLP=1`)
@@ -157,7 +157,6 @@ flowchart LR
 - 단위 다양성(kg 이외)·비한글 라벨 → 현재 가정 밖
 - 레이아웃 대변동(표/열 구분 필요) → 좌표 기반 파싱 필요
 
-자세한 설명은 `docs/INTERVIEW.md`를 참고하세요.
 
 ## 한계 및 개선 아이디어
 
