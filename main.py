@@ -1,6 +1,8 @@
 import json
 import logging
 from pathlib import Path
+import argparse
+import os
 from src.parser.cleaner import clean_text
 from src.parser.extractor import OcrExtractor
 
@@ -33,12 +35,26 @@ def setup_logging():
     root_logger.addHandler(file_handler)
 
 
-def run_cleaning_pipeline():
+def run_cleaning_pipeline(use_nlp: bool = False):
     data_dir = Path("data")
     output_dir = Path("outputs")
     output_dir.mkdir(exist_ok=True)
 
-    extractor = OcrExtractor()
+    # 선택적 NLP 보조 모드 (플래그 또는 환경변수 USE_NLP)
+    use_nlp = use_nlp or str(os.getenv("USE_NLP", "")).lower() in {"1", "true", "yes", "on"}
+    if use_nlp:
+        try:
+            from src.nlp.engine import build_nlp  # lazy import
+            from src.parser.extractor import OcrExtractor as BaseExtractor
+            from src.parser.extractor_nlp_wrapper import OcrExtractorWithNlp
+            nlp = build_nlp()
+            extractor = OcrExtractorWithNlp(base=BaseExtractor(), nlp=nlp)
+            logger.info("NLP 보조 모드 활성화: EntityRuler 적용")
+        except Exception as e:
+            logger.warning("NLP 보조 모드 초기화 실패: %s (기본 모드로 진행)", e)
+            extractor = OcrExtractor()
+    else:
+        extractor = OcrExtractor()
 
     for json_file in data_dir.glob("*.json"):
         with open(json_file, 'r', encoding='utf-8') as f:
