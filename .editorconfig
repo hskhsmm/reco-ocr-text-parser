@@ -1,0 +1,17 @@
+; 프로젝트 전역에 이 설정을 최상위로 고정
+root = true
+
+[*]
+; 소스 인코딩을 UTF-8로 고정
+; - 한글/정규식 문자열 깨짐(re.error 등) 예방
+charset = utf-8
+
+; 윈도우 개발 환경 기준 개행 통일(원하면 lf로 전환 가능)
+; - OS 차이로 인한 불필요한 diff/포맷팅 충돌 감소
+end_of_line = crlf
+
+; 파일 끝 개행 보장(여러 도구/CI 호환성)
+insert_final_newline = true
+
+; 라인 끝 공백 제거(깔끔한 diff, 리뷰/머지 충돌 감소)
+trim_trailing_whitespace = true
