@@ -81,9 +81,6 @@ class OcrExtractor:
             elif "총중량" in clean_line:
                 if weights['total'] == 0:
                     weights['total'] = val
-            elif '품명' in clean_line:
-                if weights['total'] == 0:
-                    weights['total'] = val
             elif '중량' in clean_line:
                 if temp_weight == 0:
                     temp_weight = val
@@ -221,6 +218,9 @@ class OcrExtractor:
                         continue
                     # 날짜/시간/좌표/순수숫자/무게(kg) 등 노이즈 라인은 제외
                     if is_noise_line(ls):
+                        continue
+                    # 안내문/증명 문구는 제외(발급처 오탐 방지)
+                    if any(kw in ls for kw in ["계량표는", "확인함", "증명", "확인"]):
                         continue
                     if ls in extracted_vals:
                         continue

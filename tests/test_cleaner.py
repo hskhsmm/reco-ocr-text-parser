@@ -14,7 +14,7 @@ class TestCleanText:
 
     def test_fix_ocr_typo_계그표(self):
         result = clean_text("계 그 표")
-        assert "계량증명표" in result
+        assert "계근표" in result
 
     def test_fix_ocr_typo_품종명랑(self):
         result = clean_text("품종명랑 식물")

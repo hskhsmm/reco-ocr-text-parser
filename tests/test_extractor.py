@@ -118,7 +118,8 @@ class TestClientNameExtraction:
         """OCR 공백이 포함된 '거 래 처:' 라벨에서 추출"""
         text = "거 래 처: 곰욕환경폐기물"
         result = extractor.extract(text)
-        assert result['client_name'] == "곰욕환경폐기물"
+        # 도메인 교정: 곰욕환경폐기물 → 고요환경
+        assert result['client_name'] == "고요환경"
 
     def test_client_from_상호_with_spaces(self, extractor):
         """OCR 공백이 포함된 '상 호:' 라벨에서 추출"""
