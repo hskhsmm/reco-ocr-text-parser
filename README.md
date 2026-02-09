@@ -95,7 +95,7 @@ reco-ocr-parser/
   "issuer_name": "(주)예시발급처",
   "issuer_address": "경기도 ○○시 △△로 2960-19",
   "client_name": "예시거래처",
-  "weights": { "total": 14230, "empty": 12910, "net": 1320 }
+  "weights": { "unit": "kg", "total": 14230, "empty": 12910, "net": 1320 }
 }
 ```
 

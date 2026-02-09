@@ -5,6 +5,7 @@
     "issuer_address": "N/A",
     "client_name": "고요환경",
     "weights": {
+        "unit": "kg",
         "total": 12480,
         "empty": 7470,
         "net": 5010

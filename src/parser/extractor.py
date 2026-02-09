@@ -62,6 +62,8 @@ class OcrExtractor:
         """
         weights = {"total": 0, "empty": 0, "net": 0}
         temp_weight = 0
+        # 라벨이 없는 '... kg' 값(예: '05:26:18 12,480 kg')을 순서대로 수집
+        unspecified_vals = []
 
         for line in lines:
             line_lower = line.lower()
@@ -84,6 +86,15 @@ class OcrExtractor:
             elif '중량' in clean_line:
                 if temp_weight == 0:
                     temp_weight = val
+            else:
+                # 라벨 명시 없이 'kg'가 포함된 라인의 값은 순서를 보존해 수집한다.
+                if 'kg' in line_lower:
+                    unspecified_vals.append(val)
+        # 라벨 없는 값 보조 매핑(안전한 최소 규칙): 1번째=총중량, 2번째=공차
+        if weights['total'] == 0 and len(unspecified_vals) >= 1:
+            weights['total'] = unspecified_vals[0]
+        if weights['empty'] == 0 and len(unspecified_vals) >= 2:
+            weights['empty'] = unspecified_vals[1]
 
         return weights, temp_weight
 
@@ -113,7 +124,8 @@ class OcrExtractor:
             "issuer_name": "N/A",
             "issuer_address": "N/A",
             "client_name": "N/A",
-            "weights": {"total": 0, "empty": 0, "net": 0}
+            # 출력 표준화: 단위를 명시하여 해석성을 높인다.
+            "weights": {"unit": "kg", "total": 0, "empty": 0, "net": 0}
         }
 
         # [전처리] 숫자 사이 공백 합치기 (예: "13 460 kg" → "13460kg")
@@ -180,7 +192,8 @@ class OcrExtractor:
 
         # ── 3단계: 무게 산술 검증 및 추론 ──
         w = self._infer_weights(w)
-        results['weights'] = w
+        # unit을 보존하면서 숫자 항목만 갱신
+        results['weights'].update(w)
 
         # ── 4단계: 발급 회사명 추출 ──
         if results['issuer_name'] == "N/A":
