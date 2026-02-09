@@ -5,6 +5,7 @@
     "issuer_address": "경기도 화성시 팔탄면 포승향남로 2960-19",
     "client_name": "신성(푸디스트)",
     "weights": {
+        "unit": "kg",
         "total": 14230,
         "empty": 12910,
         "net": 1320

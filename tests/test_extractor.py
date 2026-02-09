@@ -10,6 +10,11 @@ def extractor():
 class TestWeightExtraction:
     """중량 추출 및 산술 검증 로직을 검증합니다."""
 
+    def test_weights_unit_is_kg(self, extractor):
+        text = "총중량: 12480 kg\n차중량: 7470 kg\n실중량: 5010 kg"
+        result = extractor.extract(text)
+        assert result['weights'].get('unit') == 'kg'
+
     def test_basic_weight_with_kg(self, extractor):
         text = "총중량: 12480 kg\n차중량: 7470 kg\n실중량: 5010 kg"
         result = extractor.extract(text)
@@ -118,8 +123,8 @@ class TestClientNameExtraction:
         """OCR 공백이 포함된 '거 래 처:' 라벨에서 추출"""
         text = "거 래 처: 곰욕환경폐기물"
         result = extractor.extract(text)
-        # 도메인 교정: 곰욕환경폐기물 → 고요환경
-        assert result['client_name'] == "고요환경"
+        # extractor는 cleaner를 호출하지 않으므로 원문 그대로 추출
+        assert result['client_name'] == "곰욕환경폐기물"
 
     def test_client_from_상호_with_spaces(self, extractor):
         """OCR 공백이 포함된 '상 호:' 라벨에서 추출"""
