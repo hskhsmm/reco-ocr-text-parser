@@ -71,7 +71,7 @@ reco-ocr-parser/
 
 ## 환경 및 의존성
 
-- Python: 3.10 이상(개발/검증 3.10.11)
+- Python: **3.10** 이상(개발/검증 3.10.11)
 - OS: Windows / macOS / Linux
 
 필수 패키지(버전은 `requirements.txt` 기준)
